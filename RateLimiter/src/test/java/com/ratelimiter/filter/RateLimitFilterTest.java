@@ -4,6 +4,8 @@ import com.ratelimiter.model.AlgorithmType;
 import com.ratelimiter.model.RateLimitRule;
 import com.ratelimiter.model.RateLimitScope;
 import com.ratelimiter.rule.InMemoryRuleRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -22,6 +25,7 @@ class RateLimitFilterTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired InMemoryRuleRepository repository;
+    @Autowired MeterRegistry meterRegistry;
 
     @BeforeEach
     void clearRules() {
@@ -85,5 +89,37 @@ class RateLimitFilterTest {
 
         mockMvc.perform(get("/api/v1/demo/resolve/ip"))
             .andExpect(header().string("X-RateLimit-Remaining", "3"));
+    }
+
+    // ── Metrics ───────────────────────────────────────────────────────────────
+
+    @Test
+    void allowedRequest_incrementsAllowedCounter() throws Exception {
+        // UUID rule ID → unique counter tag → counter starts at 0 for this test
+        String ruleId = "metric-allowed-" + UUID.randomUUID();
+        repository.save(new RateLimitRule(ruleId, "/api/**", "default",
+            AlgorithmType.TOKEN_BUCKET, 5, 1, 1.0, RateLimitScope.IP, true));
+
+        mockMvc.perform(get("/api/v1/demo/resolve/ip")).andExpect(status().isOk());
+
+        // rate_limit_allowed_total{rule=<ruleId>, scope=IP} must be 1.0 after one allowed request
+        Counter c = meterRegistry.find("rate_limit_allowed_total").tag("rule", ruleId).counter();
+        assertThat(c).isNotNull();
+        assertThat(c.count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void deniedRequest_incrementsDeniedCounter() throws Exception {
+        String ruleId = "metric-denied-" + UUID.randomUUID();
+        repository.save(new RateLimitRule(ruleId, "/api/**", "default",
+            AlgorithmType.TOKEN_BUCKET, 1, 1, 1.0, RateLimitScope.IP, true));
+
+        mockMvc.perform(get("/api/v1/demo/resolve/ip")).andExpect(status().isOk());         // uses the 1 token
+        mockMvc.perform(get("/api/v1/demo/resolve/ip")).andExpect(status().isTooManyRequests()); // denied
+
+        // rate_limit_denied_total{rule=<ruleId>, scope=IP} must be 1.0 after one denied request
+        Counter c = meterRegistry.find("rate_limit_denied_total").tag("rule", ruleId).counter();
+        assertThat(c).isNotNull();
+        assertThat(c.count()).isEqualTo(1.0);
     }
 }

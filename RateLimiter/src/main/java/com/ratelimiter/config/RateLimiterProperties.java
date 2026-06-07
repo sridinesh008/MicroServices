@@ -12,11 +12,6 @@ public class RateLimiterProperties {
     /** Which backing store to use. Defaults to IN_MEMORY (safe for single-node dev). */
     private StoreType storeType = StoreType.IN_MEMORY;
 
-    public StoreType getStoreType() {
-        return storeType;
-    }
-
-    public void setStoreType(StoreType storeType) {
-        this.storeType = storeType;
-    }
+    public StoreType getStoreType() { return storeType; }
+    public void setStoreType(StoreType storeType) { this.storeType = storeType; }
 }

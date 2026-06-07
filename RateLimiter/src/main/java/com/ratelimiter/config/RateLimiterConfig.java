@@ -2,42 +2,55 @@ package com.ratelimiter.config;
 
 import com.ratelimiter.limiter.RateLimiter;
 import com.ratelimiter.limiter.TokenBucketRateLimiter;
+import com.ratelimiter.store.FallbackRateLimitStore;
 import com.ratelimiter.store.InMemoryRateLimitStore;
 import com.ratelimiter.store.RateLimitStore;
 import com.ratelimiter.store.RedisRateLimitStore;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-/**
- * Wires the correct RateLimitStore based on rate-limiter.store-type in application.yml.
- *
- * IN_MEMORY → InMemoryRateLimitStore  (default, no external deps)
- * REDIS     → RedisRateLimitStore     (Phase 5, requires Redis)
- */
 @Configuration
 @EnableConfigurationProperties(RateLimiterProperties.class)
 public class RateLimiterConfig {
 
-    private final RateLimiterProperties properties;
-
-    public RateLimiterConfig(RateLimiterProperties properties) {
-        this.properties = properties;
+    /**
+     * Active when rate-limiter.store-type=in-memory (or property absent).
+     * StringRedisTemplate is NOT injected here — no Redis connection opened at startup.
+     * Example: dev machine with no Redis → app starts clean.
+     */
+    @Bean
+    @ConditionalOnProperty(
+        name = "rate-limiter.store-type",
+        havingValue = "in-memory",
+        matchIfMissing = true   // safe default: in-memory when property absent
+    )
+    public RateLimitStore inMemoryRateLimitStore() {
+        return new InMemoryRateLimitStore();
     }
 
     /**
-     * StringRedisTemplate is auto-configured by Spring Boot when
-     * spring-boot-starter-data-redis is on the classpath.
-     * Lettuce (the default driver) connects lazily — no Redis connection
-     * is opened at startup when store-type=in-memory.
+     * Active only when rate-limiter.store-type=redis.
+     * Wraps RedisRateLimitStore in FallbackRateLimitStore (circuit breaker).
+     * Example: failureThreshold=3, recoveryMs=5000 →
+     *   3 Redis failures → OPEN → InMemory fallback; probe every 5s → CLOSED when Redis back.
+     */
+    /**
+     * Active only when rate-limiter.store-type=redis.
+     * Wraps RedisRateLimitStore in FallbackRateLimitStore (Resilience4j circuit breaker).
+     * Circuit breaker "redis-store" config comes from application-prod.yml resilience4j section.
+     * Example: window=10, threshold=50%, wait=5s → 5/10 failures → OPEN → InMemory fallback.
      */
     @Bean
-    public RateLimitStore rateLimitStore(StringRedisTemplate redisTemplate) {
-        return switch (properties.getStoreType()) {
-            case IN_MEMORY -> new InMemoryRateLimitStore();
-            case REDIS     -> new RedisRateLimitStore(redisTemplate);
-        };
+    @ConditionalOnProperty(name = "rate-limiter.store-type", havingValue = "redis")
+    public RateLimitStore redisRateLimitStore(StringRedisTemplate redisTemplate,
+                                              CircuitBreakerRegistry cbRegistry) {
+        RedisRateLimitStore redis = new RedisRateLimitStore(redisTemplate);
+        InMemoryRateLimitStore fallback = new InMemoryRateLimitStore();
+        return new FallbackRateLimitStore(redis, fallback, cbRegistry.circuitBreaker("redis-store"));
     }
 
     @Bean

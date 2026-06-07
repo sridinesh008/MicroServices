@@ -1,0 +1,6 @@
+rate-limiter:
+  store-type: in-memory
+
+logging:
+  level:
+    com.ratelimiter: DEBUG

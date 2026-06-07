@@ -8,6 +8,7 @@ import com.ratelimiter.resolver.EndpointKeyResolver;
 import com.ratelimiter.resolver.IpKeyResolver;
 import com.ratelimiter.resolver.UserIdKeyResolver;
 import com.ratelimiter.rule.RuleMatchingService;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,17 +40,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final IpKeyResolver ipResolver;
     private final UserIdKeyResolver userResolver;
     private final EndpointKeyResolver endpointResolver;
+    private final MeterRegistry meterRegistry;
 
     public RateLimitFilter(RuleMatchingService ruleMatchingService,
                            RateLimiter rateLimiter,
                            IpKeyResolver ipResolver,
                            UserIdKeyResolver userResolver,
-                           EndpointKeyResolver endpointResolver) {
+                           EndpointKeyResolver endpointResolver,
+                           MeterRegistry meterRegistry) {
         this.ruleMatchingService = ruleMatchingService;
         this.rateLimiter         = rateLimiter;
         this.ipResolver          = ipResolver;
         this.userResolver        = userResolver;
         this.endpointResolver    = endpointResolver;
+        this.meterRegistry       = meterRegistry;
     }
 
     @Override
@@ -84,9 +88,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setHeader("X-RateLimit-Reset",     String.valueOf(result.resetAtEpochSeconds()));
 
             if (result.allowed()) {
+                meterRegistry.counter("rate_limit_allowed_total",
+                    "rule", rule.ruleId(), "scope", rule.scope().name()).increment();
                 log.info("[RateLimitFilter] ALLOWED URI={} clientId={} remaining={}", uri, key.clientId(), result.remainingTokens());
                 chain.doFilter(request, response);
             } else {
+                meterRegistry.counter("rate_limit_denied_total",
+                    "rule", rule.ruleId(), "scope", rule.scope().name()).increment();
                 log.info("[RateLimitFilter] DENIED  URI={} clientId={} retryAfter={}s", uri, key.clientId(), result.retryAfterSeconds());
                 response.setHeader("Retry-After", String.valueOf(result.retryAfterSeconds()));
                 response.setStatus(429);

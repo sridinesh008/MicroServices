@@ -1,0 +1,29 @@
+rate-limiter:
+  store-type: redis
+
+spring:
+  redis:
+    # Set REDIS_URL env var on the server. Example: redis://user:pass@host:6379
+    url: ${REDIS_URL:redis://localhost:6379}
+
+# Resilience4j circuit breaker for "redis-store" instance.
+# Example: window=10, min-calls=5, threshold=50% →
+#   10 calls, 6 fail → 60% >= 50% → OPEN → InMemory fallback for 5s.
+#   After 5s → HALF_OPEN → 3 probe calls all succeed → CLOSED → Redis resumes.
+resilience4j:
+  circuitbreaker:
+    instances:
+      redis-store:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+
+logging:
+  level:
+    root: INFO
+    com.ratelimiter: INFO
