@@ -1,5 +1,6 @@
 package com.ratelimiter.store;
 
+import com.ratelimiter.model.AlgorithmType;
 import com.ratelimiter.model.RateLimitKey;
 import com.ratelimiter.model.RateLimitResult;
 import com.ratelimiter.model.RateLimitRule;
@@ -17,34 +18,27 @@ import java.util.List;
 
 /**
  * Distributed rate limit store backed by Redis.
+ * Supports TOKEN_BUCKET (rl:tb:* keys) and FIXED_WINDOW (rl:fw:* keys).
  *
- * Thread safety: Redis Lua scripts execute atomically on the server.
- * No two scripts touch the same key simultaneously — Redis is single-threaded
- * per key. This replaces ConcurrentHashMap.compute() from InMemoryRateLimitStore.
- *
- * Key schema: rl:tb:{ruleId}:{scope}:{clientId}:{endpoint}
- * Value type: Redis Hash with fields "tokens" and "last_refill_ms"
+ * Thread safety: Lua scripts execute atomically on the Redis server.
+ * Key schema:
+ *   Token bucket : rl:tb:{ruleId}:{scope}:{clientId}:{endpoint}
+ *   Fixed window : rl:fw:{ruleId}:{scope}:{clientId}:{endpoint}:{windowId}
  */
 public class RedisRateLimitStore implements RateLimitStore {
 
     private final StringRedisTemplate redisTemplate;
 
-    /**
-     * Lua script loaded once at startup and cached by Redis (SHA1 hash).
-     * Subsequent calls use EVALSHA instead of EVAL — saves network bandwidth.
-     *
-     * Result type List<Long>: Redis integer array → Java Long elements.
-     * [0] = allowed (0 or 1)
-     * [1] = floor(remaining tokens)
-     * [2] = retry_after_seconds
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static final RedisScript<List<Long>> TOKEN_BUCKET_SCRIPT = buildScript();
+    private static final RedisScript<List<Long>> TOKEN_BUCKET_SCRIPT  = buildScript("scripts/token_bucket.lua");
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static RedisScript<List<Long>> buildScript() {
+    private static final RedisScript<List<Long>> FIXED_WINDOW_SCRIPT  = buildScript("scripts/fixed_window.lua");
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static RedisScript<List<Long>> buildScript(String path) {
         DefaultRedisScript script = new DefaultRedisScript<>();
-        script.setLocation(new ClassPathResource("scripts/token_bucket.lua"));
+        script.setLocation(new ClassPathResource(path));
         script.setResultType(List.class);
         return script;
     }
@@ -53,16 +47,22 @@ public class RedisRateLimitStore implements RateLimitStore {
         this.redisTemplate = redisTemplate;
     }
 
-    /**
-     * Executes the Lua token bucket script atomically on Redis.
-     *
-     * TTL formula: ceil(capacity / refillRate) × 2
-     * Example: capacity=5, rate=1.0 → ceil(5) × 2 = 10 seconds
-     * Gives enough time for a full refill plus a buffer before the key expires.
-     */
     @Override
     public RateLimitResult tryConsumeTokens(RateLimitKey key, RateLimitRule rule, int tokens) {
-        String storeKey = buildKey(key, rule);
+        return switch (rule.algorithmType()) {
+            case FIXED_WINDOW -> fixedWindow(key, rule, tokens);
+            default           -> tokenBucket(key, rule, tokens);
+        };
+    }
+
+    /**
+     * Executes the Lua token bucket script atomically.
+     *
+     * TTL formula: ceil(capacity / refillRate) × 2
+     * Example: capacity=5, rate=1.0 → 10 seconds
+     */
+    private RateLimitResult tokenBucket(RateLimitKey key, RateLimitRule rule, int tokens) {
+        String storeKey = buildKey("rl:tb", key, rule);
         long   nowMs    = System.currentTimeMillis();
         long   ttl      = (long) Math.ceil(rule.capacity() / rule.refillRatePerSecond()) * 2;
 
@@ -79,40 +79,65 @@ public class RedisRateLimitStore implements RateLimitStore {
         boolean allowed    = result.get(0) == 1L;
         long    remaining  = result.get(1);
         long    retryAfter = result.get(2);
-
-        // resetAt = seconds until bucket is full (allowed) or until retry is safe (denied).
-        // Example (allowed): capacity=5, remaining=3, rate=1.0 → ceil((5-3)/1) = 2 sec from now
-        // Example (denied):  retryAfter=1 → resetAt = now + 1
-        long secondsToFull = (long) Math.ceil((rule.capacity() - remaining) / rule.refillRatePerSecond());
-        long resetAt       = nowMs / 1000 + (allowed ? secondsToFull : retryAfter);
+        long    secondsToFull = (long) Math.ceil((rule.capacity() - remaining) / rule.refillRatePerSecond());
+        long    resetAt    = nowMs / 1000 + (allowed ? secondsToFull : retryAfter);
 
         return new RateLimitResult(allowed, remaining, rule.capacity(), resetAt, retryAfter);
     }
 
     /**
-     * Clears all token bucket keys for the given client across all rules.
+     * Executes the Lua fixed window script atomically.
      *
-     * Uses SCAN (not KEYS) to avoid blocking the Redis server on large datasets.
-     * SCAN iterates in batches of ~100 keys per call.
+     * Window size = 1000 / refillRatePerSecond milliseconds.
+     * Keys are suffixed with windowId and expire after two windows.
+     */
+    private RateLimitResult fixedWindow(RateLimitKey key, RateLimitRule rule, int cost) {
+        String storeKey    = buildKey("rl:fw", key, rule);
+        long   nowMs       = System.currentTimeMillis();
+        long   windowSizeMs = Math.max(1L, (long)(1000.0 / rule.refillRatePerSecond()));
+
+        List<Long> result = redisTemplate.execute(
+                FIXED_WINDOW_SCRIPT,
+                List.of(storeKey),
+                String.valueOf(rule.capacity()),
+                String.valueOf(windowSizeMs),
+                String.valueOf(nowMs),
+                String.valueOf(cost)
+        );
+
+        boolean allowed    = result.get(0) == 1L;
+        long    remaining  = result.get(1);
+        long    retryAfter = result.get(2);
+        long    windowId   = nowMs / windowSizeMs;
+        long    windowEnd  = (windowId + 1) * windowSizeMs / 1000;
+
+        return new RateLimitResult(allowed, remaining, rule.capacity(), windowEnd, retryAfter);
+    }
+
+    /**
+     * Clears all rate limit keys for the given client across all algorithms.
      *
-     * Key format: rl:tb:{ruleId}:{scope}:{clientId}:{endpoint}
-     * Split by ":" with limit=6 → parts[4] is always the clientId.
-     * Example: "rl:tb:r1:IP:10.0.0.1:/api" → parts = [rl, tb, r1, IP, 10.0.0.1, /api]
-     *                                                  idx: 0   1   2   3   4          5
+     * Scans rl:* keys (covers rl:tb:* and rl:fw:*) using SCAN to avoid blocking.
+     * Rule keys (rl:rule:*, rl:rules:*) have fewer colon-delimited segments so the
+     * parts.length >= 5 guard excludes them safely.
+     *
+     * Key field layout (split on ":", limit=6):
+     *   idx: 0   1     2        3      4         5
+     *        rl  tb/fw {ruleId} {scope} {clientId} {endpoint[:{windowId}]}
      */
     @Override
     public void reset(RateLimitKey key) {
-        String clientId = key.clientId();
-        ScanOptions opts = ScanOptions.scanOptions().match("rl:tb:*").count(100).build();
+        String clientId  = key.clientId();
+        ScanOptions opts = ScanOptions.scanOptions().match("rl:*").count(100).build();
 
         redisTemplate.execute((RedisCallback<Void>) connection -> {
             List<byte[]> toDelete = new ArrayList<>();
 
             try (Cursor<byte[]> cursor = connection.keyCommands().scan(opts)) {
                 while (cursor.hasNext()) {
-                    byte[] rawKey = cursor.next();
-                    String k = new String(rawKey, StandardCharsets.UTF_8);
-                    String[] parts = k.split(":", 6);
+                    byte[]   rawKey = cursor.next();
+                    String   k      = new String(rawKey, StandardCharsets.UTF_8);
+                    String[] parts  = k.split(":", 6);
                     if (parts.length >= 5 && parts[4].equals(clientId)) {
                         toDelete.add(rawKey);
                     }
@@ -128,10 +153,6 @@ public class RedisRateLimitStore implements RateLimitStore {
         });
     }
 
-    /**
-     * Sends a PING to Redis. Returns true only if the response is "PONG".
-     * Used by FallbackRateLimitStore (Phase 11) to detect Redis recovery.
-     */
     @Override
     public boolean isHealthy() {
         try {
@@ -143,9 +164,9 @@ public class RedisRateLimitStore implements RateLimitStore {
         }
     }
 
-    /** Redis key format: rl:tb:{ruleId}:{scope}:{clientId}:{endpoint} */
-    private String buildKey(RateLimitKey key, RateLimitRule rule) {
-        return "rl:tb:" + rule.ruleId() + ":" + key.scope() + ":"
+    /** Key format: {prefix}:{ruleId}:{scope}:{clientId}:{endpoint} */
+    private String buildKey(String prefix, RateLimitKey key, RateLimitRule rule) {
+        return prefix + ":" + rule.ruleId() + ":" + key.scope() + ":"
                 + key.clientId() + ":" + key.endpoint();
     }
 }

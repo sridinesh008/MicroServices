@@ -108,6 +108,42 @@ class InMemoryRateLimitStoreTest {
      * AtomicInteger is used for the counter because multiple threads increment it —
      * a plain int++ would itself be a race condition.
      */
+    // --- Fixed Window tests (item #5) ---
+
+    private RateLimitRule fwRule(int capacity, double refillRate) {
+        return new RateLimitRule("fw1", "/api", "FREE",
+                AlgorithmType.FIXED_WINDOW, capacity, 1, refillRate, RateLimitScope.IP, true);
+    }
+
+    @Test
+    void fixedWindow_firstRequestAllowed() {
+        RateLimitResult result = store.tryConsumeTokens(key, fwRule(5, 1.0), 1);
+        assertTrue(result.allowed());
+        assertEquals(4L, result.remainingTokens());
+    }
+
+    @Test
+    void fixedWindow_exhaustingCapacityDenies() {
+        RateLimitRule fw = fwRule(3, 1.0);
+        for (int i = 0; i < 3; i++) {
+            store.tryConsumeTokens(key, fw, 1);
+        }
+        RateLimitResult denied = store.tryConsumeTokens(key, fw, 1);
+        assertFalse(denied.allowed());
+        assertTrue(denied.retryAfterSeconds() >= 1);
+    }
+
+    @Test
+    void fixedWindow_resetClearsCount() {
+        RateLimitRule fw = fwRule(3, 1.0);
+        for (int i = 0; i < 3; i++) {
+            store.tryConsumeTokens(key, fw, 1);
+        }
+        assertFalse(store.tryConsumeTokens(key, fw, 1).allowed());
+        store.reset(key);
+        assertTrue(store.tryConsumeTokens(key, fw, 1).allowed());
+    }
+
     @Test
     void concurrentRequestsRespectCapacity() throws InterruptedException {
         int threadCount = 10;

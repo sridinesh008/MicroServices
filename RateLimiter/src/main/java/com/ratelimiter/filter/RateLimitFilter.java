@@ -4,6 +4,7 @@ import com.ratelimiter.limiter.RateLimiter;
 import com.ratelimiter.model.RateLimitKey;
 import com.ratelimiter.model.RateLimitResult;
 import com.ratelimiter.model.RateLimitRule;
+import com.ratelimiter.resolver.CompositeKeyResolver;
 import com.ratelimiter.resolver.EndpointKeyResolver;
 import com.ratelimiter.resolver.IpKeyResolver;
 import com.ratelimiter.resolver.UserIdKeyResolver;
@@ -40,6 +41,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final IpKeyResolver ipResolver;
     private final UserIdKeyResolver userResolver;
     private final EndpointKeyResolver endpointResolver;
+    private final CompositeKeyResolver compositeResolver;
     private final MeterRegistry meterRegistry;
 
     public RateLimitFilter(RuleMatchingService ruleMatchingService,
@@ -47,12 +49,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
                            IpKeyResolver ipResolver,
                            UserIdKeyResolver userResolver,
                            EndpointKeyResolver endpointResolver,
+                           CompositeKeyResolver compositeResolver,
                            MeterRegistry meterRegistry) {
         this.ruleMatchingService = ruleMatchingService;
         this.rateLimiter         = rateLimiter;
         this.ipResolver          = ipResolver;
         this.userResolver        = userResolver;
         this.endpointResolver    = endpointResolver;
+        this.compositeResolver   = compositeResolver;
         this.meterRegistry       = meterRegistry;
     }
 
@@ -118,9 +122,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private RateLimitKey resolveKey(HttpServletRequest request, RateLimitRule rule) {
         // Pick resolver based on rule scope so key type matches intent
         return switch (rule.scope()) {
-            case USER_ID  -> userResolver.resolve(request);
-            case ENDPOINT -> endpointResolver.resolve(request);
-            default       -> ipResolver.resolve(request); // IP + COMPOSITE
+            case USER_ID   -> userResolver.resolve(request);
+            case ENDPOINT  -> endpointResolver.resolve(request);
+            case COMPOSITE -> compositeResolver.resolve(request);
+            default        -> ipResolver.resolve(request);
         };
     }
 }

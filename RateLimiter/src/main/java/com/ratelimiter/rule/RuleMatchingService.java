@@ -35,6 +35,7 @@ public class RuleMatchingService {
         Optional<RateLimitRule> best = repository.findAll().stream()
             .filter(RateLimitRule::enabled)
             .filter(rule -> PATH_MATCHER.match(rule.endpointPattern(), uri))
+            .filter(rule -> matchesTier(rule, request))
             .max(Comparator.comparingInt(RateLimitRule::priority));
 
         if (best.isPresent()) {
@@ -44,5 +45,16 @@ public class RuleMatchingService {
             log.debug("[RuleMatchingService] No matching rule for URI={}", uri);
         }
         return best;
+    }
+
+    /**
+     * Returns true when the rule's userTier is blank (wildcard) or matches the
+     * X-User-Tier request header (case-insensitive).
+     * Rules without a tier constraint apply to all users regardless of tier.
+     */
+    private boolean matchesTier(RateLimitRule rule, HttpServletRequest request) {
+        String tier = rule.userTier();
+        if (tier == null || tier.isBlank()) return true;
+        return tier.equalsIgnoreCase(request.getHeader("X-User-Tier"));
     }
 }

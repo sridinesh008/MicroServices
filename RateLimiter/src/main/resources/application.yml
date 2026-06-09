@@ -4,6 +4,7 @@ spring:
 
 rate-limiter:
   store-type: in-memory   # Options: in-memory | redis
+  admin-key: ""           # Blank = auth disabled. Set ADMIN_KEY env var in prod.
 
 server:
   port: 8080

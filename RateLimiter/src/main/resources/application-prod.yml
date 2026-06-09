@@ -1,5 +1,6 @@
 rate-limiter:
   store-type: redis
+  admin-key: ${ADMIN_KEY:}   # Must be set via ADMIN_KEY env var in prod
 
 spring:
   redis:

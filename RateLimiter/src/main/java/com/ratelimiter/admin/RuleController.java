@@ -2,6 +2,7 @@ package com.ratelimiter.admin;
 
 import com.ratelimiter.model.RateLimitRule;
 import com.ratelimiter.rule.RateLimitRuleRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +31,13 @@ public class RuleController {
     }
 
     @PostMapping
-    public ResponseEntity<RateLimitRule> create(@RequestBody RateLimitRule rule) {
+    public ResponseEntity<RateLimitRule> create(@Valid @RequestBody RateLimitRule rule) {
         return ResponseEntity.status(201).body(repository.save(rule));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<RateLimitRule> update(@PathVariable String id,
-                                                @RequestBody RateLimitRule rule) {
+                                                @Valid @RequestBody RateLimitRule rule) {
         if (repository.findById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }

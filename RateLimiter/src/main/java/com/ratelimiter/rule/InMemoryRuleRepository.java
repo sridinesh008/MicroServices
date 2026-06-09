@@ -3,13 +3,11 @@ package com.ratelimiter.rule;
 import com.ratelimiter.model.RateLimitRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
 public class InMemoryRuleRepository implements RateLimitRuleRepository {
 
     private static final Logger log = LoggerFactory.getLogger(InMemoryRuleRepository.class);

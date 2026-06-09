@@ -1,5 +1,6 @@
 package com.ratelimiter.model;
 
 public enum AlgorithmType {
-    TOKEN_BUCKET
+    TOKEN_BUCKET,
+    FIXED_WINDOW
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ratelimiter.model.AlgorithmType;
 import com.ratelimiter.model.RateLimitRule;
 import com.ratelimiter.model.RateLimitScope;
-import com.ratelimiter.rule.InMemoryRuleRepository;
+import com.ratelimiter.rule.RateLimitRuleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RuleControllerTest {
 
     @Autowired MockMvc mockMvc;
-    @Autowired InMemoryRuleRepository repository;
+    @Autowired RateLimitRuleRepository repository;
     @Autowired ObjectMapper objectMapper;
 
     private static final String BASE = "/api/v1/admin/rules";
@@ -111,5 +111,57 @@ class RuleControllerTest {
     void deleteRule_notFound_returns404() throws Exception {
         mockMvc.perform(delete(BASE + "/nonexistent"))
             .andExpect(status().isNotFound());
+    }
+
+    // --- Validation tests (item #6) ---
+
+    @Test
+    void createRule_blankRuleId_returns400() throws Exception {
+        RateLimitRule bad = new RateLimitRule("", "/api/**", "default",
+            AlgorithmType.TOKEN_BUCKET, 10, 1, 1.0, RateLimitScope.IP, true);
+        mockMvc.perform(post(BASE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(bad)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRule_negativeCapacity_returns400() throws Exception {
+        RateLimitRule bad = new RateLimitRule("rule-neg-cap", "/api/**", "default",
+            AlgorithmType.TOKEN_BUCKET, -1, 1, 1.0, RateLimitScope.IP, true);
+        mockMvc.perform(post(BASE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(bad)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRule_zeroRefillRate_returns400() throws Exception {
+        RateLimitRule bad = new RateLimitRule("rule-zero-refill", "/api/**", "default",
+            AlgorithmType.TOKEN_BUCKET, 10, 1, 0.0, RateLimitScope.IP, true);
+        mockMvc.perform(post(BASE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(bad)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRule_blankEndpointPattern_returns400() throws Exception {
+        RateLimitRule bad = new RateLimitRule("rule-blank-ep", "", "default",
+            AlgorithmType.TOKEN_BUCKET, 10, 1, 1.0, RateLimitScope.IP, true);
+        mockMvc.perform(post(BASE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(bad)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRule_nullScope_returns400() throws Exception {
+        String json = "{\"ruleId\":\"r1\",\"endpointPattern\":\"/api/**\",\"algorithmType\":\"TOKEN_BUCKET\"," +
+                      "\"capacity\":10,\"priority\":1,\"refillRatePerSecond\":1.0,\"enabled\":true}";
+        mockMvc.perform(post(BASE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+            .andExpect(status().isBadRequest());
     }
 }
