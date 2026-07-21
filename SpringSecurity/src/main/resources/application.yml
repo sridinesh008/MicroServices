@@ -1,0 +1,106 @@
+spring:
+  application:
+    name: spring-security-learning
+
+# No default profile on purpose: pick a lesson explicitly, e.g.
+#   mvn spring-boot:run -Dspring-boot.run.profiles=lesson01
+
+---
+# LESSON 1 — auto-configuration untouched.
+# Uncomment to pin the generated user's credentials via properties
+# (try AFTER observing the random generated password in the log):
+spring:
+  config:
+    activate:
+      on-profile: lesson01
+  security:
+    user:
+      name: student
+      password: s3cret
+
+---
+# LESSON 5 — H2 database + console for inspecting stored password hashes
+spring:
+  config:
+    activate:
+      on-profile: lesson05
+  datasource:
+    url: jdbc:h2:mem:lessondb
+    username: sa
+    password: ""
+  jpa:
+    show-sql: true          # watch the findByUsername query run at login
+  h2:
+    console:
+      enabled: true         # http://localhost:8080/h2-console (dev tool — NEVER in prod)
+
+---
+# LESSON 9 — session cookie hardening (see Lesson09 javadoc, "hijacking")
+spring:
+  config:
+    activate:
+      on-profile: lesson09
+server:
+  servlet:
+    session:
+      timeout: 15m          # idle sessions die; shorter = smaller stolen-cookie window
+      cookie:
+        http-only: true     # JS cannot read the cookie -> XSS can't steal it
+        secure: false       # MUST be true in prod (we have no HTTPS locally)
+        same-site: lax      # not attached to most cross-site requests
+
+---
+# LESSON 10 — HMAC secret for signing JWTs.
+# DEMO VALUE. Real deployments: inject via environment/secret manager,
+# never commit a real secret (Lesson 13). Min 32 bytes for HS256.
+lesson10:
+  jwt:
+    secret: ${LESSON10_JWT_SECRET:change-me-demo-secret-at-least-32-bytes-long!}
+spring:
+  config:
+    activate:
+      on-profile: lesson10
+
+---
+# LESSON 11 — OAuth2 client registration.
+# Placeholder values let the app BOOT; a real login needs real
+# credentials from Google Cloud Console (see Lesson11 javadoc SETUP).
+# Note the env-var indirection — secrets never live in this file.
+spring:
+  config:
+    activate:
+      on-profile: lesson11
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:demo-client-id.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET:demo-client-secret}
+            scope: openid, profile, email
+
+---
+# LESSON 13 — production posture beyond the filter chain
+spring:
+  config:
+    activate:
+      on-profile: lesson13
+server:
+  error:
+    include-stacktrace: never    # stack traces leak internals to attackers
+    include-message: never
+  servlet:
+    session:
+      timeout: 15m
+      cookie:
+        http-only: true
+        secure: false            # true in prod (behind TLS)
+        same-site: lax
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health          # ONLY health; env/beans/heapdump stay dark
+  endpoint:
+    health:
+      show-details: never        # probes need UP/DOWN, not your DB URL
