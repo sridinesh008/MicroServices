@@ -7,7 +7,8 @@ import java.util.Map;
 
 import org.springframework.ai.content.Media;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.spring.genai.expense.Expense;
 import com.spring.genai.expense.ExpenseBatch;
@@ -28,6 +29,12 @@ import com.spring.genai.users.AppUser;
  * rule extraction, LLM categorization with primary/fallback, category-level aggregation, and
  * PENDING_CONFIRMATION persistence. Nothing here is ever created as CONFIRMED -- that only
  * happens via the explicit confirm step.
+ *
+ * <p>The LLM categorization call runs outside any DB transaction. {@link #prepare} and
+ * {@link #persist} each hold a connection only for their own quick reads/writes; the
+ * multi-second, two-provider-fallback categorization call in between them holds no DB
+ * connection at all, instead of pinning one for the whole call as a single wrapping
+ * {@code @Transactional} previously did.
  */
 @Service
 public class ExpenseIngestionService {
@@ -37,20 +44,38 @@ public class ExpenseIngestionService {
 	private final CategorizationRuleService ruleService;
 	private final ExpenseCategorizationService categorizationService;
 	private final ExpenseAggregationService aggregationService;
+	private final TransactionTemplate transactionTemplate;
 
 	public ExpenseIngestionService(ExpenseBatchRepository batchRepository, ExpenseRepository expenseRepository,
 			CategorizationRuleService ruleService, ExpenseCategorizationService categorizationService,
-			ExpenseAggregationService aggregationService) {
+			ExpenseAggregationService aggregationService, PlatformTransactionManager transactionManager) {
 		this.batchRepository = batchRepository;
 		this.expenseRepository = expenseRepository;
 		this.ruleService = ruleService;
 		this.categorizationService = categorizationService;
 		this.aggregationService = aggregationService;
+		this.transactionTemplate = new TransactionTemplate(transactionManager);
 	}
 
-	@Transactional
+	private record Prepared(Long batchId, String textForCategorization, List<CategorizationRule> rulesSnapshot,
+			ExpenseDraftView shortCircuit) {
+	}
+
 	public ExpenseDraftView ingest(AppUser owner, SourceMode sourceMode, String rawText, List<Media> media,
 			int imageCount) {
+		Prepared prepared = transactionTemplate.execute(status -> prepare(owner, sourceMode, rawText, imageCount));
+
+		if (prepared.shortCircuit() != null) {
+			return prepared.shortCircuit();
+		}
+
+		CategorizationResult result = categorizationService.categorize(prepared.textForCategorization(), media,
+				prepared.rulesSnapshot());
+
+		return transactionTemplate.execute(status -> persist(owner, sourceMode, prepared.batchId(), result));
+	}
+
+	private Prepared prepare(AppUser owner, SourceMode sourceMode, String rawText, int imageCount) {
 		RuleExtraction ruleExtraction = ruleService.extract(rawText);
 		// Snapshot BEFORE persisting the new rule -- this same message's own expense must not
 		// see the rule it just defined.
@@ -64,15 +89,20 @@ public class ExpenseIngestionService {
 
 		String textForCategorization = ruleExtraction.textForCategorization();
 		boolean nothingToCategorize = (textForCategorization == null || textForCategorization.isBlank())
-				&& media.isEmpty();
+				&& imageCount == 0;
 		if (nothingToCategorize) {
 			// A standalone #newCategorizationRule message with no expense content and no images.
 			batch.setStatus(ExpenseStatus.CONFIRMED);
 			batchRepository.save(batch);
-			return new ExpenseDraftView(batch.getId(), List.of());
+			return new Prepared(batch.getId(), null, rulesSnapshot, new ExpenseDraftView(batch.getId(), List.of()));
 		}
 
-		CategorizationResult result = categorizationService.categorize(textForCategorization, media, rulesSnapshot);
+		return new Prepared(batch.getId(), textForCategorization, rulesSnapshot, null);
+	}
+
+	private ExpenseDraftView persist(AppUser owner, SourceMode sourceMode, Long batchId,
+			CategorizationResult result) {
+		ExpenseBatch batch = batchRepository.findById(batchId).orElseThrow();
 		batch.setLlmProvider(result.provider());
 		batchRepository.save(batch);
 
