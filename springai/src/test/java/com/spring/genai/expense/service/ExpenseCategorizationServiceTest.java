@@ -34,23 +34,8 @@ class ExpenseCategorizationServiceTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void usesClaudeResultWhenItSucceeds() {
+	void usesGeminiResultWhenItSucceeds() {
 		when(ruleService.buildRulePromptFragment(any())).thenReturn("");
-		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
-				.entity(CategorizedLineItems.class)).thenReturn(sample);
-
-		var result = service.categorize("apple 1kg - 100", List.of(), List.of());
-
-		assertThat(result.provider()).isEqualTo(ExpenseCategorizationService.PROVIDER_ANTHROPIC);
-		assertThat(result.extraction()).isEqualTo(sample);
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	void fallsBackToGeminiWhenClaudeFails() {
-		when(ruleService.buildRulePromptFragment(any())).thenReturn("");
-		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
-				.entity(CategorizedLineItems.class)).thenThrow(new RuntimeException("claude down"));
 		when(gemini.prompt().system(anyString()).user(any(Consumer.class)).call()
 				.entity(CategorizedLineItems.class)).thenReturn(sample);
 
@@ -62,12 +47,27 @@ class ExpenseCategorizationServiceTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void throwsWhenBothProvidersFail() {
+	void fallsBackToClaudeWhenGeminiFails() {
 		when(ruleService.buildRulePromptFragment(any())).thenReturn("");
-		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
-				.entity(CategorizedLineItems.class)).thenThrow(new RuntimeException("claude down"));
 		when(gemini.prompt().system(anyString()).user(any(Consumer.class)).call()
 				.entity(CategorizedLineItems.class)).thenThrow(new RuntimeException("gemini down"));
+		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
+				.entity(CategorizedLineItems.class)).thenReturn(sample);
+
+		var result = service.categorize("apple 1kg - 100", List.of(), List.of());
+
+		assertThat(result.provider()).isEqualTo(ExpenseCategorizationService.PROVIDER_ANTHROPIC);
+		assertThat(result.extraction()).isEqualTo(sample);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void throwsWhenBothProvidersFail() {
+		when(ruleService.buildRulePromptFragment(any())).thenReturn("");
+		when(gemini.prompt().system(anyString()).user(any(Consumer.class)).call()
+				.entity(CategorizedLineItems.class)).thenThrow(new RuntimeException("gemini down"));
+		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
+				.entity(CategorizedLineItems.class)).thenThrow(new RuntimeException("claude down"));
 
 		assertThatThrownBy(() -> service.categorize("apple 1kg - 100", List.of(), List.of()))
 				.isInstanceOf(ExtractionFailedException.class);
@@ -78,7 +78,7 @@ class ExpenseCategorizationServiceTest {
 	void promptIncludesActiveRuleFragment() {
 		List<CategorizationRule> rules = List.of();
 		when(ruleService.buildRulePromptFragment(rules)).thenReturn("\n\nCustom rule: pizza is Dining");
-		when(claude.prompt().system(anyString()).user(any(Consumer.class)).call()
+		when(gemini.prompt().system(anyString()).user(any(Consumer.class)).call()
 				.entity(CategorizedLineItems.class)).thenReturn(sample);
 
 		service.categorize("pizza 300", List.of(), rules);
@@ -86,7 +86,7 @@ class ExpenseCategorizationServiceTest {
 		// atLeastOnce(): the when(...) stub setup above also invokes .system(...) once on the
 		// same deep-stub chain; .getValue() returns the last (real) invocation's argument.
 		org.mockito.ArgumentCaptor<String> systemPrompt = org.mockito.ArgumentCaptor.forClass(String.class);
-		org.mockito.Mockito.verify(claude.prompt(), org.mockito.Mockito.atLeastOnce()).system(systemPrompt.capture());
+		org.mockito.Mockito.verify(gemini.prompt(), org.mockito.Mockito.atLeastOnce()).system(systemPrompt.capture());
 		assertThat(systemPrompt.getValue()).contains("Custom rule: pizza is Dining");
 	}
 

@@ -14,9 +14,9 @@ import com.spring.genai.rules.CategorizationRule;
 import com.spring.genai.rules.CategorizationRuleService;
 
 /**
- * Reads receipt images and/or free text into category-level line items. Claude is tried
+ * Reads receipt images and/or free text into category-level line items. Gemini is tried
  * first; any failure (rate limit, API error, malformed structured output) falls back to
- * Gemini. Both providers share the same prompt/DTO, so text mode (no media) and image mode
+ * Claude. Both providers share the same prompt/DTO, so text mode (no media) and image mode
  * use one code path.
  */
 @Service
@@ -66,15 +66,15 @@ public class ExpenseCategorizationService {
 		String systemPrompt = BASE_INSTRUCTIONS + ruleService.buildRulePromptFragment(activeRules);
 
 		try {
-			CategorizedLineItems extraction = callVision(claudeVisionClient, systemPrompt, text, media);
-			return new CategorizationResult(extraction, PROVIDER_ANTHROPIC);
+			CategorizedLineItems extraction = callVision(geminiVisionClient, systemPrompt, text, media);
+			return new CategorizationResult(extraction, PROVIDER_GOOGLE_GENAI);
 		} catch (Exception primaryFailure) {
-			log.warn("Claude extraction failed, falling back to Gemini", primaryFailure);
+			log.warn("Gemini extraction failed, falling back to Claude", primaryFailure);
 			try {
-				CategorizedLineItems extraction = callVision(geminiVisionClient, systemPrompt, text, media);
-				return new CategorizationResult(extraction, PROVIDER_GOOGLE_GENAI);
+				CategorizedLineItems extraction = callVision(claudeVisionClient, systemPrompt, text, media);
+				return new CategorizationResult(extraction, PROVIDER_ANTHROPIC);
 			} catch (Exception fallbackFailure) {
-				log.error("Gemini fallback also failed", fallbackFailure);
+				log.error("Claude fallback also failed", fallbackFailure);
 				throw new ExtractionFailedException(
 						"Could not read the expense details right now. Please try again.", fallbackFailure);
 			}
@@ -84,13 +84,13 @@ public class ExpenseCategorizationService {
 	public String suggestCategory(String context, List<CategorizationRule> activeRules) {
 		String systemPrompt = CATEGORY_SUGGESTION_INSTRUCTIONS + ruleService.buildRulePromptFragment(activeRules);
 		try {
-			return callSuggestion(claudeVisionClient, systemPrompt, context);
+			return callSuggestion(geminiVisionClient, systemPrompt, context);
 		} catch (Exception primaryFailure) {
-			log.warn("Claude recategorization failed, falling back to Gemini", primaryFailure);
+			log.warn("Gemini recategorization failed, falling back to Claude", primaryFailure);
 			try {
-				return callSuggestion(geminiVisionClient, systemPrompt, context);
+				return callSuggestion(claudeVisionClient, systemPrompt, context);
 			} catch (Exception fallbackFailure) {
-				log.error("Gemini fallback also failed", fallbackFailure);
+				log.error("Claude fallback also failed", fallbackFailure);
 				throw new ExtractionFailedException("Could not recategorize right now.", fallbackFailure);
 			}
 		}

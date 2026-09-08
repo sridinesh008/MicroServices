@@ -16,7 +16,7 @@ import com.google.genai.Client;
 
 /**
  * Two independent, always-present {@link ChatClient} beans for the expense-extraction
- * pipeline: Claude is primary, Gemini is the fallback (see
+ * pipeline: Gemini is primary, Claude is the fallback (see
  * {@code ExpenseCategorizationService}). Built manually rather than via each starter's own
  * autoconfiguration, because {@code spring.ai.model.chat} only activates ONE provider's
  * {@code ChatModel} bean at a time -- the conversational assistant's {@link ChatClientConfig}
