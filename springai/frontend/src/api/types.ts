@@ -1,4 +1,4 @@
-export type SourceMode = "IMAGE" | "TEXT";
+export type SourceMode = "IMAGE" | "TEXT" | "MANUAL";
 export type ExpenseStatus = "PENDING_CONFIRMATION" | "CONFIRMED" | "DISCARDED";
 
 export interface ExpenseView {

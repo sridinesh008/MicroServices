@@ -1,0 +1,657 @@
+.skin-command-feed {
+  --bg: #f3efe7;
+  --surface: #ffffff;
+  --surface-2: #eae4d8;
+  --ink: #211f1a;
+  --ink-2: #6c6455;
+  --ink-3: #a39a87;
+  --accent: #22406b;
+  --accent-ink: #ffffff;
+  --accent-soft: #dce3ec;
+  --border: #e2dacb;
+  --c1: #22406b;
+  --c2: #b65c38;
+  --c3: #3f7a5c;
+  --c4: #a8792f;
+  --c5: #5c6fa8;
+  --c6: #8b4b6b;
+  --c7: #4b8b8b;
+  --c8: #7a5c3f;
+  --shadow: 0 2px 4px rgba(30, 25, 15, 0.05), 0 18px 36px -20px rgba(30, 25, 15, 0.22);
+}
+@media (prefers-color-scheme: dark) {
+  .skin-command-feed:not([data-theme="light"]) {
+    --bg: #1b1915;
+    --surface: #242119;
+    --surface-2: #2c2820;
+    --ink: #ede8de;
+    --ink-2: #a79d8b;
+    --ink-3: #6e6656;
+    --accent: #7c9cc9;
+    --accent-ink: #161a22;
+    --accent-soft: #28344a;
+    --border: #3a3527;
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 18px 36px -20px rgba(0, 0, 0, 0.6);
+  }
+}
+.skin-command-feed[data-theme="dark"] {
+  --bg: #1b1915;
+  --surface: #242119;
+  --surface-2: #2c2820;
+  --ink: #ede8de;
+  --ink-2: #a79d8b;
+  --ink-3: #6e6656;
+  --accent: #7c9cc9;
+  --accent-ink: #161a22;
+  --accent-soft: #28344a;
+  --border: #3a3527;
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 18px 36px -20px rgba(0, 0, 0, 0.6);
+}
+
+.skin-command-feed {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Work Sans", system-ui, sans-serif;
+  min-height: 100vh;
+}
+.skin-command-feed button {
+  font-family: inherit;
+  cursor: pointer;
+}
+.skin-command-feed :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cf-serif {
+  font-family: "Instrument Serif", Georgia, serif;
+}
+.cf-mono {
+  font-family: "Space Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.cf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  padding: 18px 20px 0;
+}
+.cf-topbar-inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.cf-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.cf-brand {
+  font-family: "Instrument Serif";
+  font-style: italic;
+  font-size: 22px;
+}
+.cf-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cf-icon-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.cf-brand-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cf-command {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 8px 6px 20px;
+  box-shadow: var(--shadow);
+}
+.cf-command svg {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.cf-command input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: "Work Sans";
+  font-size: 15px;
+  color: var(--ink);
+  padding: 10px 0;
+}
+.cf-command input:focus {
+  outline: none;
+}
+.cf-command input::placeholder {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.cf-command button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cf-command button:disabled {
+  opacity: 0.5;
+}
+
+.cf-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 16px 0 18px;
+  scrollbar-width: none;
+}
+.cf-strip::-webkit-scrollbar {
+  display: none;
+}
+.cf-pill {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px 16px;
+  min-width: 112px;
+}
+.cf-pill .cf-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+.cf-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cf-pill .cf-amt {
+  font-size: 16px;
+  font-weight: 700;
+}
+.cf-pill .cf-bar {
+  height: 4px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  margin-top: 7px;
+  overflow: hidden;
+}
+.cf-pill .cf-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.cf-feed-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px 100px;
+}
+.cf-date-divider {
+  font-family: "Instrument Serif";
+  font-style: italic;
+  font-size: 19px;
+  color: var(--ink-2);
+  margin: 26px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cf-date-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.cf-feed-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: cf-rise 0.3s ease both;
+  transition: background 0.15s;
+}
+@keyframes cf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-feed-item,
+  .cf-exchange,
+  .cf-pending {
+    animation: none;
+  }
+}
+.cf-feed-item:hover {
+  background: var(--surface-2);
+}
+.cf-icon-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.cf-feed-item .cf-body {
+  flex: 1;
+  min-width: 0;
+}
+.cf-feed-item .cf-merchant {
+  font-weight: 600;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf-feed-item .cf-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cf-tag {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cf-feed-item .cf-amt {
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.cf-cat-select {
+  border: none;
+  background: transparent;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  font-weight: 600;
+  text-align: right;
+  font-family: inherit;
+  flex-shrink: 0;
+  max-width: 90px;
+}
+
+.cf-exchange {
+  background: var(--surface-2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  animation: cf-rise 0.3s ease both;
+}
+.cf-exchange .cf-q {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.cf-exchange .cf-a {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.cf-exchange .cf-q::before {
+  content: "→ ";
+  color: var(--accent);
+}
+
+.cf-pending {
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  animation: cf-rise 0.3s ease both;
+}
+.cf-pending .cf-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.cf-pending .cf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.cf-pending .cf-f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cf-pending label {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cf-pending input {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 7px 9px;
+  font-size: 13px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: inherit;
+}
+.cf-pending-date {
+  color: var(--ink-3);
+  font-size: 11.5px;
+  margin: 0 0 12px;
+}
+.cf-pending-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.cf-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.cf-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cf-btn.cf-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.cf-btn-small {
+  padding: 6px 11px;
+  font-size: 11.5px;
+}
+.cf-btn:disabled {
+  opacity: 0.5;
+}
+.cf-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: cf-spin 0.7s linear infinite;
+  margin-right: 6px;
+}
+@keyframes cf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cf-empty {
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  padding: 40px 0;
+}
+.cf-error {
+  color: #b6503a;
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.cf-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 12, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  z-index: 30;
+}
+.cf-scrim.cf-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cf-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 88vw;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 31;
+  padding: 22px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  overflow-y: auto;
+}
+.cf-drawer.cf-open {
+  transform: translateX(0);
+}
+.cf-drawer h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 18px;
+}
+.cf-drawer h3 {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  font-weight: 700;
+  margin: 20px 0 10px;
+}
+.cf-drawer h3:first-of-type {
+  margin-top: 0;
+}
+.cf-field input[type="text"] {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+.cf-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cf-chip {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 600;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cf-chip.cf-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.cf-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  gap: 8px;
+}
+.cf-rule-row:first-of-type {
+  border-top: none;
+}
+.cf-inactive {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+.cf-rule-deactivate {
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.cf-add-rule {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+.cf-add-rule input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 11.5px;
+  color: var(--ink);
+  font-family: inherit;
+}
+.cf-drawer .cf-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 18px;
+}
+.cf-reapply-result {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  margin-top: 8px;
+  display: block;
+}
+
+.cf-photo-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.cf-photo-thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+.cf-photo-thumb img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.cf-photo-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+}
+.cf-photo-add {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  background: transparent;
+}
+.cf-photo-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.cf-photo-panel input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-family: inherit;
+  margin-bottom: 10px;
+}
+.cf-photo-panel-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+  .cf-pending .cf-grid {
+    grid-template-columns: 1fr;
+  }
+}

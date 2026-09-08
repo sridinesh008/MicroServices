@@ -1,0 +1,754 @@
+.skin-rail-bento {
+  --bg: #f1f2f6;
+  --surface: #ffffff;
+  --surface-2: #f7f8fb;
+  --ink: #1d2033;
+  --ink-2: #666b85;
+  --ink-3: #9ca0b8;
+  --accent: #4b4ce0;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8e8fc;
+  --border: #e2e4ee;
+  --c1: #4b4ce0;
+  --c2: #e0574b;
+  --c3: #3fa687;
+  --c4: #e0a63f;
+  --c5: #3f8fe0;
+  --c6: #b14be0;
+  --c7: #4bc7e0;
+  --c8: #e04b9a;
+  --shadow: 0 1px 2px rgba(20, 22, 50, 0.04), 0 16px 32px -18px rgba(20, 22, 50, 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  .skin-rail-bento:not([data-theme="light"]) {
+    --bg: #14151f;
+    --surface: #1b1d2b;
+    --surface-2: #212335;
+    --ink: #e7e8f5;
+    --ink-2: #9498b5;
+    --ink-3: #5d6180;
+    --accent: #8b8cf0;
+    --accent-ink: #14151f;
+    --accent-soft: #2a2a47;
+    --border: #2a2c42;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(0, 0, 0, 0.6);
+  }
+}
+.skin-rail-bento[data-theme="dark"] {
+  --bg: #14151f;
+  --surface: #1b1d2b;
+  --surface-2: #212335;
+  --ink: #e7e8f5;
+  --ink-2: #9498b5;
+  --ink-3: #5d6180;
+  --accent: #8b8cf0;
+  --accent-ink: #14151f;
+  --accent-soft: #2a2a47;
+  --border: #2a2c42;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(0, 0, 0, 0.6);
+}
+
+.skin-rail-bento {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope", system-ui, sans-serif;
+  display: flex;
+  min-height: 100vh;
+}
+.skin-rail-bento button {
+  font-family: inherit;
+  cursor: pointer;
+}
+.skin-rail-bento :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.rb-mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.rb-rail {
+  width: 76px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.rb-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 18px;
+}
+.rb-rail-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.rb-rail-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.rb-rail-btn[aria-current="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.rb-rail-spacer {
+  flex: 1;
+}
+.rb-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  border: 1px solid var(--border);
+}
+
+.rb-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 60px;
+  position: relative;
+}
+.rb-view {
+  animation: rb-rise 0.35s ease both;
+}
+@keyframes rb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-view {
+    animation: none;
+  }
+}
+.rb-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.rb-page-head h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+.rb-page-head p {
+  color: var(--ink-2);
+  font-size: 13.5px;
+  margin: 2px 0 0;
+}
+
+.rb-bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+.rb-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.rb-cell h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.rb-c-total,
+.rb-c-donut,
+.rb-c-trend,
+.rb-c-filters,
+.rb-c-rules {
+  grid-column: span 4;
+}
+@media (max-width: 1050px) {
+  .rb-c-total,
+  .rb-c-donut,
+  .rb-c-trend,
+  .rb-c-filters,
+  .rb-c-rules {
+    grid-column: span 6;
+  }
+}
+@media (max-width: 680px) {
+  .rb-bento {
+    grid-template-columns: 1fr;
+  }
+  .rb-c-total,
+  .rb-c-donut,
+  .rb-c-trend,
+  .rb-c-filters,
+  .rb-c-rules {
+    grid-column: span 1;
+  }
+}
+
+.rb-total-figure {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+.rb-total-sub {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  margin-top: 8px;
+}
+
+.rb-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: 11px;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.rb-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.rb-btn.rb-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.rb-btn-small {
+  padding: 6px 10px;
+  font-size: 11.5px;
+}
+.rb-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: rb-spin 0.7s linear infinite;
+  margin-right: 6px;
+}
+@keyframes rb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rb-reapply {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rb-reapply-result {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.rb-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.rb-donut {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.rb-donut::after {
+  content: "";
+  position: absolute;
+  inset: 15px;
+  background: var(--surface);
+  border-radius: 50%;
+}
+.rb-donut span {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: "IBM Plex Mono", monospace;
+}
+.rb-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  flex: 1;
+  min-width: 0;
+}
+.rb-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rb-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rb-legend-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.rb-legend-val {
+  font-weight: 700;
+}
+
+.rb-trend {
+  width: 100%;
+  height: 110px;
+  overflow: visible;
+}
+.rb-trend text {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  fill: var(--ink-3);
+}
+
+.rb-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.rb-tgl {
+  padding: 6px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.rb-tgl.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.rb-mini-search {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.rb-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  gap: 8px;
+}
+.rb-rule-row:first-of-type {
+  border-top: none;
+}
+.rb-inactive {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+.rb-rule-deactivate {
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.rb-add-rule {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+.rb-add-rule input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 11.5px;
+  color: var(--ink);
+  font-family: inherit;
+}
+.rb-empty {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.rb-expenses {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.rb-expenses th {
+  text-align: left;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  font-weight: 700;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.rb-expenses td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.rb-expenses tbody tr:hover {
+  background: var(--surface-2);
+}
+.rb-expenses tbody tr:last-child td {
+  border-bottom: none;
+}
+.rb-src-tag {
+  font-size: 9.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.rb-amount-cell {
+  text-align: right;
+  font-weight: 700;
+}
+.rb-cat-edit {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  padding: 0;
+  font-size: inherit;
+}
+.rb-cat-select {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-family: inherit;
+}
+.rb-edited {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.rb-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.rb-chat-shell {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 130px);
+  max-width: 720px;
+}
+.rb-thread {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.rb-hint {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  margin-top: 40px;
+}
+.rb-bubble {
+  max-width: 76%;
+  padding: 11px 15px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  animation: rb-pop 0.25s ease both;
+}
+@keyframes rb-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rb-bubble-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-right-radius: 4px;
+}
+.rb-bubble-assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.rb-confirm-card {
+  align-self: flex-start;
+  max-width: 88%;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.rb-confirm-head span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: 700;
+}
+.rb-confirm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin: 12px 0 6px;
+}
+.rb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rb-field span {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.rb-field input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 13px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: inherit;
+}
+.rb-confirm-date {
+  color: var(--ink-3);
+  font-size: 11.5px;
+  margin: 0 0 12px;
+}
+.rb-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.rb-error {
+  color: #d0403f;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.rb-composer {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: var(--shadow);
+  margin-top: 12px;
+}
+.rb-composer textarea {
+  flex: 1;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 8px 6px;
+  max-height: 120px;
+}
+.rb-composer textarea:focus {
+  outline: none;
+}
+.rb-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rb-send-btn:disabled {
+  opacity: 0.5;
+}
+
+.rb-fab {
+  position: fixed;
+  right: 36px;
+  bottom: 36px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  box-shadow: 0 12px 24px -8px rgba(75, 76, 224, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+  z-index: 20;
+}
+.rb-fab:hover {
+  transform: scale(1.06) rotate(90deg);
+}
+
+.rb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 16, 30, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  animation: rb-fade 0.2s ease both;
+}
+@keyframes rb-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.rb-modal {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.4);
+  animation: rb-pop 0.25s ease both;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rb-modal h3 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+}
+.rb-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.rb-photo-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rb-photo-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.rb-photo-thumb img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.rb-photo-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+}
+.rb-photo-add {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  color: var(--ink-3);
+  font-size: 11px;
+  background: transparent;
+}

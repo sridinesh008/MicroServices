@@ -1,0 +1,119 @@
+.ft-switcher {
+  --ft-bg: rgba(255, 255, 255, 0.74);
+  --ft-border: rgba(20, 20, 30, 0.1);
+  --ft-ink: #17181d;
+  --ft-ink-2: #6b6f82;
+  --ft-active-bg: #17181d;
+  --ft-active-ink: #ffffff;
+
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--ft-bg);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--ft-border);
+  box-shadow: 0 10px 28px -10px rgba(10, 10, 20, 0.45);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ft-switcher:not([data-theme="light"]) {
+    --ft-bg: rgba(24, 25, 34, 0.72);
+    --ft-border: rgba(255, 255, 255, 0.12);
+    --ft-ink: #f1f2f7;
+    --ft-ink-2: #9498b0;
+    --ft-active-bg: #f1f2f7;
+    --ft-active-ink: #17181d;
+  }
+}
+
+.ft-switcher[data-theme="dark"] {
+  --ft-bg: rgba(24, 25, 34, 0.72);
+  --ft-border: rgba(255, 255, 255, 0.12);
+  --ft-ink: #f1f2f7;
+  --ft-ink-2: #9498b0;
+  --ft-active-bg: #f1f2f7;
+  --ft-active-ink: #17181d;
+}
+
+.ft-switcher button {
+  border: none;
+  background: transparent;
+  color: var(--ft-ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.ft-switcher button:hover:not(.active) {
+  color: var(--ft-ink);
+}
+
+.ft-switcher button.active {
+  background: var(--ft-active-bg);
+  color: var(--ft-active-ink);
+}
+
+.ft-switcher button:focus-visible {
+  outline: 2px solid var(--ft-ink-2);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .ft-switcher {
+    top: auto;
+    bottom: 14px;
+    right: 14px;
+    left: 14px;
+    justify-content: center;
+  }
+}
+
+.ft-loadingbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1001;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ft-loadingbar.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, #6366f1, transparent);
+  animation: ft-loading-sweep 1.1s ease-in-out infinite;
+}
+@keyframes ft-loading-sweep {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ft-loadingbar.active::before {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}

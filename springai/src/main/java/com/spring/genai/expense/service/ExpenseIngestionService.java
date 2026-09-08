@@ -75,6 +75,15 @@ public class ExpenseIngestionService {
 		return transactionTemplate.execute(status -> persist(owner, sourceMode, prepared.batchId(), result));
 	}
 
+	/** Direct manual entry -- no LLM round trip, no batch, created straight to CONFIRMED. */
+	public ExpenseView ingestManual(AppUser owner, String description, BigDecimal amount, String category,
+			LocalDate expenseDate) {
+		Expense expense = new Expense(owner, null, category, amount, description, SourceMode.MANUAL,
+				expenseDate != null ? expenseDate : LocalDate.now());
+		expense.confirm();
+		return ExpenseView.from(expenseRepository.save(expense));
+	}
+
 	private Prepared prepare(AppUser owner, SourceMode sourceMode, String rawText, int imageCount) {
 		RuleExtraction ruleExtraction = ruleService.extract(rawText);
 		// Snapshot BEFORE persisting the new rule -- this same message's own expense must not

@@ -36,6 +36,7 @@ import com.spring.genai.expense.dto.EditExpenseRequest;
 import com.spring.genai.expense.dto.ExpenseDraftView;
 import com.spring.genai.expense.dto.ExpenseFilterRequest;
 import com.spring.genai.expense.dto.ExpenseView;
+import com.spring.genai.expense.dto.ManualExpenseRequest;
 import com.spring.genai.expense.dto.TextExpenseRequest;
 import com.spring.genai.expense.service.ExpenseIngestionService;
 import com.spring.genai.expense.service.ExpenseQueryService;
@@ -82,6 +83,16 @@ public class ExpenseApiController {
 		}
 		log.info("text expense submission user={}", user.getUsername());
 		return ingestionService.ingest(user, SourceMode.TEXT, request.message(), List.of(), 0);
+	}
+
+	@PostMapping(path = "/api/expenses/manual")
+	@ResponseStatus(HttpStatus.CREATED)
+	public ExpenseView submitManual(@Valid @RequestBody ManualExpenseRequest request, Principal principal) {
+		AppUser user = currentUser(principal);
+		checkRateLimit(user);
+		log.info("manual expense submission user={}", user.getUsername());
+		return ingestionService.ingestManual(user, request.description(), request.amount(), request.category(),
+				request.expenseDate());
 	}
 
 	@PostMapping(path = "/api/expenses/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

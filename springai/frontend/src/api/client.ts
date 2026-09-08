@@ -7,6 +7,7 @@ import type {
   Page,
   RuleView
 } from "./types";
+import { beginRequest, endRequest } from "./loadingStore";
 
 function readCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
@@ -14,29 +15,34 @@ function readCookie(name: string): string | null {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const method = (init.method ?? "GET").toUpperCase();
-  const headers = new Headers(init.headers);
-  if (method !== "GET" && method !== "HEAD") {
-    const token = readCookie("XSRF-TOKEN");
-    if (token) {
-      headers.set("X-XSRF-TOKEN", token);
+  beginRequest();
+  try {
+    const method = (init.method ?? "GET").toUpperCase();
+    const headers = new Headers(init.headers);
+    if (method !== "GET" && method !== "HEAD") {
+      const token = readCookie("XSRF-TOKEN");
+      if (token) {
+        headers.set("X-XSRF-TOKEN", token);
+      }
     }
-  }
-  const res = await fetch(path, { ...init, headers, credentials: "include" });
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = await res.json();
-      message = body.message ?? message;
-    } catch {
-      // no JSON body
+    const res = await fetch(path, { ...init, headers, credentials: "include" });
+    if (!res.ok) {
+      let message = res.statusText;
+      try {
+        const body = await res.json();
+        message = body.message ?? message;
+      } catch {
+        // no JSON body
+      }
+      throw new Error(message || `Request failed (${res.status})`);
     }
-    throw new Error(message || `Request failed (${res.status})`);
+    if (res.status === 204) {
+      return undefined as T;
+    }
+    return (await res.json()) as T;
+  } finally {
+    endRequest();
   }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return (await res.json()) as T;
 }
 
 function filterParams(filters: ExpenseFilters, extra: Record<string, string | number | undefined> = {}) {
@@ -73,6 +79,15 @@ export const api = {
       form.append("caption", caption);
     }
     return request("/api/expenses/image", { method: "POST", body: form });
+  },
+
+  /** Direct manual entry -- no LLM round trip, created straight to CONFIRMED, no confirm step. */
+  submitManual(description: string, amount: string, category: string, expenseDate?: string): Promise<ExpenseView> {
+    return request("/api/expenses/manual", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, amount, category, expenseDate: expenseDate || undefined })
+    });
   },
 
   drafts(): Promise<ExpenseView[]> {
@@ -136,46 +151,51 @@ export const api = {
 
 /** Streams /api/chat's SSE text response, invoking onChunk as each piece arrives. */
 export async function streamChat(message: string, onChunk: (text: string) => void, signal?: AbortSignal) {
-  const token = readCookie("XSRF-TOKEN");
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    credentials: "include",
-    signal,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-      ...(token ? { "X-XSRF-TOKEN": token } : {})
-    },
-    body: JSON.stringify({ message })
-  });
-  if (!res.ok || !res.body) {
-    let msg = res.statusText;
-    try {
-      const body = await res.json();
-      msg = body.message ?? msg;
-    } catch {
-      // ignore
+  beginRequest();
+  try {
+    const token = readCookie("XSRF-TOKEN");
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      credentials: "include",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(token ? { "X-XSRF-TOKEN": token } : {})
+      },
+      body: JSON.stringify({ message })
+    });
+    if (!res.ok || !res.body) {
+      let msg = res.statusText;
+      try {
+        const body = await res.json();
+        msg = body.message ?? msg;
+      } catch {
+        // ignore
+      }
+      throw new Error(msg || `Chat request failed (${res.status})`);
     }
-    throw new Error(msg || `Chat request failed (${res.status})`);
-  }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const events = buffer.split("\n\n");
-    buffer = events.pop() ?? "";
-    for (const event of events) {
-      const dataLines = event
-        .split("\n")
-        .filter((line) => line.startsWith("data:"))
-        .map((line) => line.slice(5).replace(/^ /, ""));
-      if (dataLines.length) {
-        onChunk(dataLines.join("\n"));
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+      for (const event of events) {
+        const dataLines = event
+          .split("\n")
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).replace(/^ /, ""));
+        if (dataLines.length) {
+          onChunk(dataLines.join("\n"));
+        }
       }
     }
+  } finally {
+    endRequest();
   }
 }
