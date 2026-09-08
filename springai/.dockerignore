@@ -1,0 +1,8 @@
+target/
+.git/
+.idea/
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+*.md
+k8s/
+terraform/

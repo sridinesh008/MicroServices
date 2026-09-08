@@ -1,0 +1,25 @@
+# TLS normally terminates in front of this app (ALB/nginx) — trust its X-Forwarded-* headers
+# so Secure cookies, HSTS, and redirect URLs reflect the real (https) scheme. Until a reverse
+# proxy + TLS is in front of the EC2 deployment (tracked as a follow-up), set COOKIE_SECURE=false
+# via env so the session cookie is still sent by the browser over plain HTTP; flip it back to
+# true (the default) once TLS is in place.
+server:
+  forwarded-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: ${COOKIE_SECURE:true}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    com.spring.genai: INFO

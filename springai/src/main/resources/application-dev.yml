@@ -1,0 +1,22 @@
+logging:
+  level:
+    com.spring.genai: DEBUG
+    org.springframework.security: DEBUG
+
+# Local-only defaults so `mvn spring-boot:run -Dspring-boot.run.profiles=dev` works without
+# exporting env vars first. Never used outside dev — prod has no fallback (see
+# AppUserProvisioningRunner). Format: username:password:ROLE1|ROLE2,username2:password2:ROLE.
+assistant:
+  seed-users: ${ASSISTANT_SEED_USERS:user:change-me-user:USER,admin:change-me-admin:USER|ADMIN}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/fintrack_dev}
+    username: ${DB_USERNAME:fintrack}
+    password: ${DB_PASSWORD:devpass}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
